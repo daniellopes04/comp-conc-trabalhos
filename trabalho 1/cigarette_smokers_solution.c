@@ -19,15 +19,16 @@
 #define ANSI_COLOR_CYAN     "\x1b[36m"
 #define ANSI_COLOR_RESET    "\x1b[0m"
 
+
+// The ingredients are numbered like the following:
+#define     TOBACCO     1
+#define     PAPER       2
+#define     MATCHES     3
+
 // The smokers are numbered like the following:
 //      1: Smoker who has tobacco
 //      2: Smoker who has paper
 //      3: Smoker who has matches
-
-// The ingredients are numbered like the following:
-//      1: Tobacco
-//      2: Paper
-//      3: Matches
 
 sem_t smokers[N];       // binary semaphores simulating each smoker's behavior
 sem_t ingredients[N];   // binary semaphores controling the access to each ingredient
@@ -45,7 +46,7 @@ int smoker_num[N];      // number of each smoker
 
 int main()
 {
-    printf("Dining Philosophers: working example 1\n");
+    printf("Cigarette Smokers: working example 1\n");
 
     int i, retval;
     pthread_t thread_id[N]; // each thread will simulate the behavior of one smoker
@@ -90,11 +91,11 @@ void puts_ingredients(void)
 {
     int r1, r2;
 
-    r1 = rand() % 3;
-    r2 = rand() % 3;
+    r1 = rand() % N;
+    r2 = rand() % N;
     
     while (r2 == r1)
-        r2 = rand() % 3;
+        r2 = rand() % N;
 
     sem_post(&ingredients[r1]);
     sem_post(&ingredients[r2]);
@@ -121,18 +122,18 @@ void smoke(int smoker_num)
     printf("Smoker %d waits for ingredients\n", smoker_num + 1);
     switch(smoker_num){
         case(1):
-            retval1 = sem_wait(&ingredients[2]);
-            retval2 = sem_wait(&ingredients[3]);
+            retval1 = sem_wait(&ingredients[PAPER]);
+            retval2 = sem_wait(&ingredients[MATCHES]);
             break;
 
         case(2):
-            retval1 = sem_wait(&ingredients[1]);
-            retval2 = sem_wait(&ingredients[3]);
+            retval1 = sem_wait(&ingredients[TOBACCO]);
+            retval2 = sem_wait(&ingredients[MATCHES]);
             break;
 
         case(3):
-            retval1 = sem_wait(&ingredients[1]);
-            retval2 = sem_wait(&ingredients[2]);
+            retval1 = sem_wait(&ingredients[TOBACCO]);
+            retval2 = sem_wait(&ingredients[PAPER]);
             break;
 
         default:
@@ -153,23 +154,23 @@ void finishes_smoking(int smoker_num)
     
     switch(smoker_num){
         case(1):
-            sem_post(&ingredients[2]);
+            sem_post(&ingredients[PAPER]);
             sleep(1);
-            sem_post(&ingredients[3]);
+            sem_post(&ingredients[MATCHES]);
             sleep(1);
             break;
 
         case(2):
-            sem_post(&ingredients[1]);
+            sem_post(&ingredients[TOBACCO]);
             sleep(1);
-            sem_post(&ingredients[3]);
+            sem_post(&ingredients[MATCHES]);
             sleep(1);
             break;
 
         case(3):
-            sem_post(&ingredients[1]);
+            sem_post(&ingredients[TOBACCO]);
             sleep(1);
-            sem_post(&ingredients[2]);
+            sem_post(&ingredients[PAPER]);
             sleep(1);
             break;
 
