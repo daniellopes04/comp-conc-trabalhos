@@ -1,3 +1,11 @@
+/******************************************************************************
+
+                            Online C Compiler.
+                Code, Compile, Run and Debug C program online.
+Write your code in this editor and press "Run" button to compile and execute it.
+
+*******************************************************************************/
+
 /***********************************************************
  * Cigarette smokers solution
  ***********************************************************/
@@ -5,6 +13,7 @@
 
 #include <stdio.h>
 #include <semaphore.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include <errno.h>
 #include <unistd.h>
@@ -50,7 +59,7 @@ int main()
 
     int i, retval;
     pthread_t thread_id[N]; // each thread will simulate the behavior of one smoker
-    pthread_t agent;        // thread that will simulate the agent
+    pthread_t agent_thread;        // thread that will simulate the agent
 
     for (i = 0; i < N; i++)
     {
@@ -63,17 +72,22 @@ int main()
         retval = sem_init(&ingredients[i], 0, 1);
         printf("(%d %d)\n", retval, errno);
     }
+    
+    for (i = 0; i< N; i++)
+            sem_wait(&ingredients[i]);
 
-    pthread_create(&agent, NULL, agent, NULL);
+    pthread_create(&agent_thread, NULL, agent, NULL);
 
     for (i = 0; i < N; i++)
     {
+        smoker_num[i] = i;
         printf("Created smoker %d\n", smoker_num[i] + 1);
         pthread_create(&thread_id[i], NULL, smoker, &smoker_num[i]);
     }
 
     for (i = 0; i < N; i++)
         pthread_join(thread_id[i], NULL);
+        
 }
 
 void *agent(void)
@@ -81,9 +95,13 @@ void *agent(void)
     printf("Agent is waiting to put ingredients on the table\n");
     while (1)
     {
+        for (int i = 0; i< N; i++)
+            sem_wait(&smokers[i]);
         puts_ingredients();
-        printf(ANSI_COLOR_GREEN "Agent put ingredients on the table\n" ANSI_COLOR_RESET);
-        sleep(0);
+        //printf(ANSI_COLOR_GREEN "Agent put ingredients on the table\n" ANSI_COLOR_RESET);
+        for (int i = 0; i< N; i++)
+            sem_post(&smokers[i]);
+        sleep(1);
     }
 }
 
@@ -99,7 +117,11 @@ void puts_ingredients(void)
 
     sem_post(&ingredients[r1]);
     sem_post(&ingredients[r2]);
-}
+    
+    printf("%d  %d ",r1+1,r2+1);
+    printf(ANSI_COLOR_GREEN "Agent put ingredients on the table\n" ANSI_COLOR_RESET);
+    sem_wait(&smokers[3 - r1 - r2]);
+;}
 
 void *smoker(void *num)
 {
@@ -107,10 +129,11 @@ void *smoker(void *num)
     printf("Smoker %d is waiting\n", i + 1);
     while (1)
     {
-        smoke(i);
+        smoke(i+1);
         printf(ANSI_COLOR_GREEN "Smoker %d is smoking\n" ANSI_COLOR_RESET, i + 1);
-        sleep(0);
-        finishes_smoking(i);
+        sleep(4);
+        finishes_smoking(i+1);
+        sem_post(&smokers[i]);
     }
 }
 
@@ -119,21 +142,48 @@ void smoke(int smoker_num)
     int retval1, retval2;
 
     // waiting for ingredients
-    printf("Smoker %d waits for ingredients\n", smoker_num + 1);
+    printf("Smoker %d waits for ingredients\n", smoker_num);
     switch(smoker_num){
-        case(1):
-            retval1 = sem_wait(&ingredients[PAPER]);
-            retval2 = sem_wait(&ingredients[MATCHES]);
+        case(TOBACCO):
+            while(1){
+                if (sem_wait(&ingredients[PAPER-1]))
+                    printf("Error! %d", errno);
+                if (sem_trywait(&ingredients[MATCHES-1])){
+                    printf("Error! %d", errno);
+                    sem_post(&ingredients[PAPER-1]);
+                    sleep(1);
+                }
+                else
+                    break;
+            }
             break;
 
-        case(2):
-            retval1 = sem_wait(&ingredients[TOBACCO]);
-            retval2 = sem_wait(&ingredients[MATCHES]);
+        case(PAPER):
+            while(1){
+                if (sem_wait(&ingredients[TOBACCO-1]))
+                    printf("Error! %d", errno);
+                if (sem_trywait(&ingredients[MATCHES-1])){
+                    printf("Error! %d", errno);
+                    sem_post(&ingredients[TOBACCO-1]);
+                    sleep(1);
+                }
+                else
+                    break;
+            }
             break;
 
-        case(3):
-            retval1 = sem_wait(&ingredients[TOBACCO]);
-            retval2 = sem_wait(&ingredients[PAPER]);
+        case(MATCHES):
+            while (1){
+                if (sem_wait(&ingredients[TOBACCO-1]))
+                    printf("Error! %d", errno);
+                if (sem_trywait(&ingredients[PAPER-1])){
+                    printf("Error! %d", errno);
+                    sem_post(&ingredients[TOBACCO-1]);
+                    sleep(1);
+                }
+                else
+                    break;
+            }
             break;
 
         default:
@@ -141,37 +191,24 @@ void smoke(int smoker_num)
     }
     
     // got ingredients
-    printf("Smoker %d got ingredients (%d %d %d)\n", smoker_num + 1, retval1, retval2, errno);
-
+    printf("Smoker %d got ingredients (%d %d %d)\n", smoker_num, retval1, retval2, errno);
     sleep(1);
 
 }
 
 void finishes_smoking(int smoker_num)
 {
-    printf("Smoker %d putting ingredients down\n", smoker_num + 1);
-    printf("Smoker %d is waiting\n", smoker_num + 1);
+    printf(ANSI_COLOR_RED "Smoker %d putting ingredients down\n" ANSI_COLOR_RESET, smoker_num );
+    printf("Smoker %d is waiting\n", smoker_num);
     
     switch(smoker_num){
-        case(1):
-            sem_post(&ingredients[PAPER]);
-            sleep(1);
-            sem_post(&ingredients[MATCHES]);
-            sleep(1);
+        case(TOBACCO):
             break;
 
-        case(2):
-            sem_post(&ingredients[TOBACCO]);
-            sleep(1);
-            sem_post(&ingredients[MATCHES]);
-            sleep(1);
+        case(PAPER):
             break;
 
-        case(3):
-            sem_post(&ingredients[TOBACCO]);
-            sleep(1);
-            sem_post(&ingredients[PAPER]);
-            sleep(1);
+        case(MATCHES):
             break;
 
         default:
