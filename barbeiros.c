@@ -5,8 +5,8 @@
 #include <error.h>
 #include <unistd.h>
 
-#define N 1 //Numero de cadeiras
-#define C 3 //Numero de clientes
+#define N 5 //Numero de cadeiras
+#define C 10 //Numero de clientes
 
 pthread_mutex_t room;
 int chairs_occupied = 0;
