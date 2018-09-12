@@ -1,7 +1,9 @@
-## Description
+## Descrição
 
-Assume a cigarette requires three ingredients to make and smoke: tobacco, paper, and matches. There are three smokers around a table, each of whom has an infinite supply of one of the three ingredients — one smoker has an infinite supply of tobacco, another has paper, and the third has matches.
+O problema consiste em 3 fumantes que se sentam ao redor de uma mesa. Assumimos então que são necessários apenas 3 ingredientes para se fazer e fumar um cigarro, sendo eles: tabaco, papel e fósforos. Cada um dos fumantes possui um estoque infinito de um dos ingredientes, mas não possui os outros dois.
 
-There is also a non-smoking agent who enables the smokers to make their cigarettes by arbitrarily (non-deterministically) selecting two of the supplies to place on the table. The smoker who has the third supply should remove the two items from the table, using them (along with their own supply) to make a cigarette, which they smoke for a while. Once the smoker has finished his cigarette, the agent places two new random items on the table. This process continues forever.
+Existe um quarto agente não-fumante que permite que os fumantes façam seus cigarros. Ele faz isso selecionando arbitrariamente dois dos ingredientes para serem colocados na mesa. O fumante cujo ingrediente não foi selecionado pode então preparar um cigarro usando os ingredientes colocados na mesa e o seu próprio. Após preparar e fumar o cigarro, os ingredientes são devolvidos aos seus donos e o agente não-fumante seleciona novamente dois ingredientes arbitrariamente. Esse processo então continua indefinidamente.
 
-Three semaphores are used to represent the items on the table; the agent increases the appropriate semaphore to signal that an item has been placed on the table, and smokers decrement the semaphore when removing items. Also, each smoker has an associated semaphore that they use to signal to the agent that they are done smoking; the agent has a process that waits on each smoker's semaphore to let it know that it can place the new items on the table
+### Solução
+
+A solução do problema requer certa atenção para evitar deadlocks. Como cada fumante espera dois ingredientes, se, quando o agente distribuir, dois fumantes diferentes pegarem cada um um ingrediente, o programa estará em deadlock. Por isso, quando um ingrediente é obito, mas o outro está travado, o fumante deve soltar o ingrediente que pegou para que o outro posso utilizá-lo. Devido à maneira como o agente distribui os ingredientes, não foram encontrados problemas de starvation.
